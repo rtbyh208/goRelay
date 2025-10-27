@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户端管理系统</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background-color: #f5f5f5;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        /* 全屏样式 */
+        body.fullscreen .container {
+            padding: 40px;
+        }
+        
+        /* 标题样式 */
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* 消息样式 */
+        .message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: #4CAF50;
+        }
+        
+        .message.error {
+            background-color: #f44336;
+        }
+        
+        /* 工具栏样式 */
+        .toolbar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        /* 按钮样式 */
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .button.primary {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .button.primary:hover {
+            background-color: #1976D2;
+        }
+        
+        .button.danger {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .button.danger:hover {
+            background-color: #d32f2f;
+        }
+        
+        .button.info {
+            background-color: #00BCD4;
+            color: white;
+        }
+        
+        .button.info:hover {
+            background-color: #0097A7;
+        }
+        
+        .button.warning {
+            background-color: #FFC107;
+            color: white;
+        }
+        
+        .button.warning:hover {
+            background-color: #FFA000;
+        }
+        
+        .fullscreen-btn {
+            background-color: #9C27B0;
+            color: white;
+        }
+        
+        .fullscreen-btn:hover {
+            background-color: #7B1FA2;
+        }
+        
+        /* 表格样式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        /* 状态样式 */
+        .status-active {
+            color: #4CAF50;
+            font-weight: 500;
+        }
+        
+        .status-inactive {
+            color: #f44336;
+            font-weight: 500;
+        }
+        
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        /* 响应内容样式 */
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>客户端管理系统</h1>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="toolbar">
+            <button class="button primary" id="addClientBtn">新增客户端</button>
+            <button class="button fullscreen-btn" id="toggleFullscreenBtn">全屏显示</button>
+        </div>
+        
+        <table id="clientTable">
+            <thead>
+                <tr>
+                    <th>编号</th>
+                    <th>值</th>
+                    <th>备注</th>
+                    <th>上传</th>
+                    <th>下载</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="clientTableBody">
+                <!-- 客户端列表将通过JavaScript动态生成 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 修改客户端模态框 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeEditModal">&times;</span>
+            <h2>修改客户端</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editId">ID</label>
+                    <input type="text" id="editId" name="id" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editValue">Value</label>
+                    <input type="text" id="editValue" name="value" required>
+                </div>
+                <div class="form-group">
+                    <label for="editRemask">Remask</label>
+                    <input type="text" id="editRemask" name="remask">
+                </div>
+                <button type="submit" class="button primary">保存修改</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 新增客户端模态框 -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeAddModal">&times;</span>
+            <h2>新增客户端</h2>
+            <form id="addForm">
+                <div class="form-group">
+                    <label for="addValue">Value</label>
+                    <input type="text" id="addValue" name="value" required>
+                </div>
+                <div class="form-group">
+                    <label for="addRemask">Remask (可选)</label>
+                    <input type="text" id="addRemask" name="remask">
+                </div>
+                <button type="submit" class="button primary">新增</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 后端响应模态框 -->
+    <div id="responseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeResponseModal">&times;</span>
+            <h2>后端响应</h2>
+            <pre id="responseContent"></pre>
+            <button class="button info" id="closeResponseBtn">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        // 存储当前从后端获取的客户端数据
+        let currentClients = {};
+
+        // DOM元素
+        const clientTableBody = document.getElementById('clientTableBody');
+        const addClientBtn = document.getElementById('addClientBtn');
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreenBtn');
+        const editModal = document.getElementById('editModal');
+        const addModal = document.getElementById('addModal');
+        const responseModal = document.getElementById('responseModal');
+        const closeEditModal = document.getElementById('closeEditModal');
+        const closeAddModal = document.getElementById('closeAddModal');
+        const closeResponseModal = document.getElementById('closeResponseModal');
+        const closeResponseBtn = document.getElementById('closeResponseBtn');
+        const editForm = document.getElementById('editForm');
+        const addForm = document.getElementById('addForm');
+        const responseContent = document.getElementById('responseContent');
+        const message = document.getElementById('message');
+        const body = document.body;
+
+        // 初始化页面
+        function initPage() {
+            fetchClients();
+            setupEventListeners();
+        }
+
+        // 获取客户端列表 - 使用后端API
+        function fetchClients() {
+            fetch('/listClient')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // 存储当前客户端数据
+                    currentClients = data;
+                    renderClientTable(currentClients);
+                })
+                .catch(error => {
+                    showMessage(`获取客户端列表失败: ${error.message}`, 'error');
+                    console.error('Error fetching clients:', error);
+                });
+        }
+
+        // 渲染客户端表格
+        function renderClientTable(clients) {
+            clientTableBody.innerHTML = '';
+            
+            if (!clients || Object.keys(clients).length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="7" style="text-align: center; padding: 20px;">暂无客户端数据</td>';
+                clientTableBody.appendChild(emptyRow);
+                return;
+            }
+
+            for (const id in clients) {
+                if (clients.hasOwnProperty(id)) {
+                    const client = clients[id];
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${id}</td>
+                        <td>${client.value}</td>
+                        <td>${client.remask || '-'}</td>
+                        <td>${client.TX}</td>
+                        <td>${client.RX}</td>
+                        <td class="${client.status ? 'status-active' : 'status-inactive'}">
+                            ${client.status ? '启用' : '停用'}
+                        </td>
+                        <td>
+                            <button class="button warning switch-btn" data-id="${id}">
+                                ${client.status ? '停用' : '启用'}
+                            </button>
+                            <button class="button danger delete-btn" data-id="${id}">删除</button>
+                            <button class="button info edit-btn" data-id="${id}">修改</button>
+                        </td>
+                    `;
+                    clientTableBody.appendChild(row);
+                }
+            }
+
+            // 为新添加的按钮绑定事件
+            bindTableButtons();
+        }
+
+        // 绑定表格按钮事件
+        function bindTableButtons() {
+            // 停启用按钮
+            document.querySelectorAll('.switch-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    switchService(id);
+                });
+            });
+
+            // 删除按钮
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    if (confirm(`确定要删除ID为 ${id} 的客户端吗？`)) {
+                        deleteClient(id);
+                    }
+                });
+            });
+
+            // 修改按钮
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.getAttribute('data-id');
+                    openEditModal(id);
+                });
+            });
+        }
+
+        // 打开修改模态框
+        function openEditModal(id) {
+            const client = currentClients[id];
+            if (client) {
+                document.getElementById('editId').value = id;
+                document.getElementById('editValue').value = client.value;
+                document.getElementById('editRemask').value = client.remask || '';
+                editModal.style.display = 'block';
+            }
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 新增客户端按钮
+            addClientBtn.addEventListener('click', function() {
+                document.getElementById('addValue').value = '';
+                document.getElementById('addRemask').value = '';
+                addModal.style.display = 'block';
+            });
+
+            // 全屏切换按钮
+            toggleFullscreenBtn.addEventListener('click', toggleFullscreen);
+
+            // 监听全屏状态变化
+            document.addEventListener('fullscreenchange', updateFullscreenButtonText);
+            document.addEventListener('webkitfullscreenchange', updateFullscreenButtonText);
+            document.addEventListener('mozfullscreenchange', updateFullscreenButtonText);
+            document.addEventListener('MSFullscreenChange', updateFullscreenButtonText);
+
+            // 关闭模态框
+            closeEditModal.addEventListener('click', function() {
+                editModal.style.display = 'none';
+            });
+
+            closeAddModal.addEventListener('click', function() {
+                addModal.style.display = 'none';
+            });
+
+            closeResponseModal.addEventListener('click', function() {
+                responseModal.style.display = 'none';
+            });
+
+            closeResponseBtn.addEventListener('click', function() {
+                responseModal.style.display = 'none';
+            });
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target === editModal) {
+                    editModal.style.display = 'none';
+                } else if (event.target === addModal) {
+                    addModal.style.display = 'none';
+                } else if (event.target === responseModal) {
+                    responseModal.style.display = 'none';
+                }
+            });
+
+            // 提交修改表单
+            editForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const id = document.getElementById('editId').value;
+                const value = document.getElementById('editValue').value;
+                const remask = document.getElementById('editRemask').value;
+                modifyClient(id, value, remask);
+            });
+
+            // 提交新增表单
+            addForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const value = document.getElementById('addValue').value;
+                const remask = document.getElementById('addRemask').value;
+                modifyClient(null, value, remask);
+            });
+        }
+
+        // 切换全屏
+        function toggleFullscreen() {
+            const element = document.documentElement;
+            
+            if (!document.fullscreenElement &&    // 标准
+                !document.webkitFullscreenElement && // Chrome, Safari, Opera
+                !document.mozFullScreenElement &&    // Firefox
+                !document.msFullscreenElement) {     // IE/Edge
+                // 进入全屏
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    element.mozRequestFullScreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+                body.classList.add('fullscreen');
+            } else {
+                // 退出全屏
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                body.classList.remove('fullscreen');
+            }
+        }
+
+        // 更新全屏按钮文本
+        function updateFullscreenButtonText() {
+            if (document.fullscreenElement || 
+                document.webkitFullscreenElement || 
+                document.mozFullScreenElement || 
+                document.msFullscreenElement) {
+                toggleFullscreenBtn.textContent = '退出全屏';
+            } else {
+                toggleFullscreenBtn.textContent = '全屏显示';
+            }
+        }
+
+        // 切换服务状态 - 使用后端API
+        function switchService(id) {
+            fetch('/switchServicee', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message || `客户端 ${id} 状态已更新`, 'success');
+                        // 刷新客户端列表
+                        fetchClients();
+                    } else {
+                        showMessage(data.message || '操作失败', 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`切换客户端状态失败: ${error.message}`, 'error');
+                    console.error('Error switching service:', error);
+                });
+        }
+
+        // 删除客户端 - 使用后端API
+        function deleteClient(id) {
+            fetch('/delClient', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message || `客户端 ${id} 已删除`, 'success');
+                        // 刷新客户端列表
+                        fetchClients();
+                    } else {
+                        showMessage(data.message || '删除失败', 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`删除客户端失败: ${error.message}`, 'error');
+                    console.error('Error deleting client:', error);
+                });
+        }
+
+        // 修改或新增客户端 - 使用后端API
+        function modifyClient(id, value, remask) {
+            // 构建请求参数
+            const params = {
+                value: value
+            };
+            
+            if (id) {
+                params.id = id;
+            }
+            
+            if (remask) {
+                params.remask = remask;
+            }
+
+            fetch('/modifyClient', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(params)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        if (id) {
+                            // 修改客户端
+                            editModal.style.display = 'none';
+                            
+                            // 在当前页面显示响应
+                            responseContent.textContent = JSON.stringify(data, null, 2);
+                            responseModal.style.display = 'block';
+                        } else {
+                            // 新增客户端
+                            addModal.style.display = 'none';
+                            
+                            // 在新页面显示新增客户端的详细信息
+                            function openNewClientDetailsPage(responseData) {
+                                // 创建新窗口
+                                const newWindow = window.open('', '_blank');
+                                
+                                // 构建新页面的HTML内容
+                                const htmlContent = `
+                                <!DOCTYPE html>
+                                <html lang="zh-CN">
+                                <head>
+                                    <meta charset="UTF-8">
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                                    <title>新增客户端详情</title>
+                                    <style>
+                                        body {
+                                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+                                            background-color: #f5f5f5;
+                                            padding: 20px;
+                                            margin: 0;
+                                        }
+                                        .container {
+                                            max-width: 600px;
+                                            margin: 0 auto;
+                                            background-color: white;
+                                            padding: 30px;
+                                            border-radius: 8px;
+                                            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                        }
+                                        h1 {
+                                            color: #333;
+                                            margin-bottom: 20px;
+                                            text-align: center;
+                                        }
+                                        .info-line {
+                                            margin-bottom: 10px;
+                                            font-size: 16px;
+                                        }
+                                        pre {
+                                            background-color: #f5f5f5;
+                                            padding: 15px;
+                                            border-radius: 4px;
+                                            overflow-x: auto;
+                                            white-space: pre-wrap;
+                                            font-family: monospace;
+                                            border: 1px solid #ddd;
+                                            margin-top: 20px;
+                                        }
+                                        button {
+                                            padding: 10px 20px;
+                                            background-color: #2196F3;
+                                            color: white;
+                                            border: none;
+                                            border-radius: 4px;
+                                            cursor: pointer;
+                                            font-size: 14px;
+                                            margin-top: 20px;
+                                        }
+                                        button:hover {
+                                            background-color: #1976D2;
+                                        }
+                                    </style>
+                                </head>
+                                <body>
+                                    <div class="container">
+                                        <h1>新增客户端详情</h1>
+                                        
+                                        <div class="info-line"> ${responseData.message || '新客户端已创建'}</div>
+                                        
+                                        <div class="detail-item">
+                                            <span class="detail-label">配置文件：</span>
+                                            <pre>${JSON.stringify(responseData.data || {}, null, 2)}</pre>
+                                        </div>
+                                        
+                                        <button onclick="window.close()">关闭页面</button>
+                                    </div>
+                                </body>
+                                </html>
+                                `;
+                                
+                                // 在新窗口中写入HTML内容
+                                newWindow.document.write(htmlContent);
+                                newWindow.document.close();
+                            }
+                            
+                            // 在新页面显示返回的数据，传递整个data对象
+                            openNewClientDetailsPage(data);
+                        }
+                        
+                        showMessage(data.message || (id ? '客户端已更新' : '新客户端已创建'), 'success');
+                        // 刷新客户端列表
+                        fetchClients();
+                    } else {
+                        showMessage(data.message || '操作失败', 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage(`修改客户端失败: ${error.message}`, 'error');
+                    console.error('Error modifying client:', error);
+                });
+        }
+
+        // 显示消息提示
+        function showMessage(text, type = 'success') {
+            message.textContent = text;
+            message.className = 'message ' + type;
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 3000);
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', initPage);
+    </script>
+</body>
+</html>
