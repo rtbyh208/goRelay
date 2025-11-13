@@ -108,6 +108,7 @@ func (c *Caches) load() error {
 	err = json.Unmarshal(dataBytes, &c)
 	if err != nil {
 		goLog.Error("dbcache load db error ", err)
+		c.Cache = make(map[string]string, 0)
 		return err
 	}
 	return nil

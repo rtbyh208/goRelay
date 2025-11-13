@@ -76,7 +76,13 @@ func ConnectToPipeServer(addr string, registerID string, cache *dbcache.Caches) 
 
 			goLog.Debug("from pipe server read messages, id: ", p.Id, " data len: ", len(msg))
 
-			_, isok := clientConnections[p.Conn]
+			isok := func(pConn string) bool {
+				clientMapMutex.Lock()
+				defer clientMapMutex.Unlock()
+
+				_, isok := clientConnections[pConn]
+				return isok
+			}(p.Conn)
 			if !isok {
 				// realServerAddr, isok := realServerInfoMap[p.Id]
 				stopClientID := fmt.Sprintf("Stop_%s", p.Id)
